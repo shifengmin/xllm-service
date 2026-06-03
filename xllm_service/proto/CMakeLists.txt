@@ -23,9 +23,12 @@ proto_library(
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/chat.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/common.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/completion.proto
+    ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/sample.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/rec.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/disagg_pd.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/xllm_service.proto
+    ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/audio_generation.proto
+    ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/video_generation.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/embedding.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/embedding_data.proto
     ${CMAKE_SOURCE_DIR}/third_party/xllm/xllm/proto/tensor.proto
