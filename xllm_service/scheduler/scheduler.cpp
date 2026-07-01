@@ -114,7 +114,17 @@ bool Scheduler::schedule(std::shared_ptr<Request> request) {
     }
   }
 
-  auto ret = lb_policy_->select_instances_pair(request);
+  auto ret = false;
+  if (!request->session_id.empty() &&
+      instance_mgr_->select_instances_pair_by_session(request->session_id,
+                                                      request->model,
+                                                      &request->routing)) {
+    ret = true;
+  } else {
+    request->routing.prefill_name.clear();
+    request->routing.decode_name.clear();
+    ret = lb_policy_->select_instances_pair(request);
+  }
   if (!ret) {
     return false;
   }

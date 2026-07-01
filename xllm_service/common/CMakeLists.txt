@@ -10,6 +10,7 @@ cc_library(
     global_gflags.h
     json_reader.h
     macros.h
+    session_id_util.h
     slice.h
     threadpool.h
     time_predictor.h
@@ -24,6 +25,7 @@ cc_library(
   SRCS
     global_gflags.cpp
     json_reader.cpp
+    session_id_util.cpp
     threadpool.cpp
     time_predictor.cpp
     utils.cpp
@@ -42,3 +44,13 @@ cc_library(
     xxHash
 )
 add_dependencies(common brpc-static)
+
+cc_test(
+  NAME
+    session_id_util_test
+  SRCS
+    session_id_util_test.cpp
+  DEPS
+    :common
+    GTest::gtest_main
+)

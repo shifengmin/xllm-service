@@ -135,3 +135,8 @@ DEFINE_string(tool_call_parser,
               "",
               "Specify the parser for handling tool-call interactions(e.g. "
               "auto, qwen25, qwen3, kimi_k2, deepseekv3, glm45, glm47).");
+
+DEFINE_bool(enable_session_aware_scheduling,
+            true,
+            "Enable stateless session-aware scheduling when X-Session-Id is "
+            "present. Prefill is selected by hash; decode uses RR in PD mode.");

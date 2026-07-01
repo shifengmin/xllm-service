@@ -32,6 +32,7 @@ limitations under the License.
 #include <vector>
 
 #include "common/global_gflags.h"
+#include "common/session_id_util.h"
 #include "common/types.h"
 #include "common/utils.h"
 #include "common/xllm/output.h"
@@ -885,6 +886,63 @@ void InstanceMgr::update_request_metrics(std::shared_ptr<Request> request,
   if (decode_it->second.decode_request_num == 0) {
     flip_decode_to_prefill(request->routing.decode_name);
   }
+}
+
+bool InstanceMgr::select_instances_pair_by_session(
+    const std::string& session_id,
+    const std::string& model,
+    Routing* routing) {
+  if (!FLAGS_enable_session_aware_scheduling || session_id.empty()) {
+    return false;
+  }
+
+  std::unique_lock<std::shared_mutex> lock(cluster_mutex_);
+  if (prefill_index_.empty()) {
+    LOG(ERROR) << "No prefill or default instance found for session routing!";
+    return false;
+  }
+
+  routing->decode_name.clear();
+
+  std::vector<std::string> prefill_candidates;
+  prefill_candidates.reserve(prefill_index_.size());
+  for (const auto& instance_name : prefill_index_) {
+    auto it = instances_.find(instance_name);
+    if (it == instances_.end() || !is_instance_schedulable(it->second)) {
+      continue;
+    }
+    prefill_candidates.emplace_back(instance_name);
+  }
+
+  if (prefill_candidates.empty()) {
+    LOG(ERROR) << "No schedulable prefill instance found for session routing!";
+    return false;
+  }
+
+  std::sort(prefill_candidates.begin(), prefill_candidates.end());
+  const std::string affinity_key = make_session_affinity_key(session_id, model);
+  const uint64_t hash = hash_session_affinity_key(affinity_key);
+  routing->prefill_name = prefill_candidates[hash % prefill_candidates.size()];
+
+  if (decode_index_.empty()) {
+    return can_route_prefill_without_decode_locked(routing->prefill_name);
+  }
+
+  if (suspect_instances_.empty()) {
+    next_decode_index_ = next_decode_index_ % decode_index_.size();
+    routing->decode_name = decode_index_[next_decode_index_];
+    next_decode_index_++;
+    return true;
+  }
+
+  if (!select_next_schedulable_instance(instances_,
+                                        decode_index_,
+                                        &next_decode_index_,
+                                        &routing->decode_name)) {
+    LOG(ERROR) << "No schedulable decode instance found for session routing!";
+    return false;
+  }
+  return true;
 }
 
 bool InstanceMgr::select_instance_pair_on_slo(

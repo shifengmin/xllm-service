@@ -30,6 +30,7 @@ limitations under the License.
 #include "chat.pb.h"
 #include "common/call_data.h"
 #include "common/closure_guard.h"
+#include "common/session_id_util.h"
 #include "common/utils.h"
 #include "common/xllm/status.h"
 #include "common/xllm/uuid.h"
@@ -48,6 +49,28 @@ std::string generate_service_request_id(const std::string& method) {
   ss << "-";
   ss << short_uuid.random();
   return ss.str();
+}
+
+bool apply_session_id_from_http(brpc::Controller* cntl,
+                                std::shared_ptr<Request> request) {
+  const char* header_value = cntl->http_request().GetHeader(kSessionIdHeader);
+  if (header_value == nullptr) {
+    header_value = cntl->http_request().GetHeader("x-session-id");
+  }
+  if (header_value == nullptr || header_value[0] == '\0') {
+    return true;
+  }
+
+  const std::string session_id = header_value;
+  if (!is_valid_session_id(session_id)) {
+    LOG(WARNING) << "Ignore invalid X-Session-Id and fallback to default "
+                      "scheduling: "
+                   << session_id;
+    return true;
+  }
+
+  request->session_id = session_id;
+  return true;
 }
 
 nlohmann::json proto_value_to_json(const google::protobuf::Value& pb_value);
@@ -390,6 +413,10 @@ void XllmHttpServiceImpl::Completions(
 
   auto service_request = generate_request(req_pb, "/v1/completions");
 
+  if (!apply_session_id_from_http(cntl, service_request)) {
+    return;
+  }
+
   if (!req_pb->prompt().empty()) {
     service_request->prompt = req_pb->prompt();
     // select instance for request
@@ -456,6 +483,10 @@ void XllmHttpServiceImpl::ChatCompletions(
   }
 
   auto service_request = generate_request(req_pb, "/v1/chat/completions");
+
+  if (!apply_session_id_from_http(cntl, service_request)) {
+    return;
+  }
 
   if (req_pb->messages_size() > 0) {
     service_request->messages.reserve(req_pb->messages_size());

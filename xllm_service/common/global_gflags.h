@@ -76,3 +76,5 @@ DECLARE_int32(target_tpot);
 DECLARE_string(tool_call_parser);
 
 DECLARE_string(reasoning_parser);
+
+DECLARE_bool(enable_session_aware_scheduling);

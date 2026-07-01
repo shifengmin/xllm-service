@@ -80,6 +80,11 @@ class InstanceMgr final {
   // select instances based on the SLO
   bool select_instance_pair_on_slo(std::shared_ptr<Request> request);
 
+  // Stateless session-aware routing: hash prefill by session, RR for decode in PD.
+  bool select_instances_pair_by_session(const std::string& session_id,
+                                        const std::string& model,
+                                        Routing* routing);
+
   void set_as_master();
 
  private:
