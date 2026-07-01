@@ -53,23 +53,23 @@ std::string generate_service_request_id(const std::string& method) {
 
 bool apply_session_id_from_http(brpc::Controller* cntl,
                                 std::shared_ptr<Request> request) {
-  const char* header_value = cntl->http_request().GetHeader(kSessionIdHeader);
+  const std::string* header_value =
+      cntl->http_request().GetHeader(kSessionIdHeader);
   if (header_value == nullptr) {
     header_value = cntl->http_request().GetHeader("x-session-id");
   }
-  if (header_value == nullptr || header_value[0] == '\0') {
+  if (header_value == nullptr || header_value->empty()) {
     return true;
   }
 
-  const std::string session_id = header_value;
-  if (!is_valid_session_id(session_id)) {
+  if (!is_valid_session_id(*header_value)) {
     LOG(WARNING) << "Ignore invalid X-Session-Id and fallback to default "
                       "scheduling: "
-                   << session_id;
+                   << *header_value;
     return true;
   }
 
-  request->session_id = session_id;
+  request->session_id = *header_value;
   return true;
 }
 
