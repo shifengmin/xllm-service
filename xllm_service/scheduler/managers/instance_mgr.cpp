@@ -925,7 +925,14 @@ bool InstanceMgr::select_instances_pair_by_session(
   routing->prefill_name = prefill_candidates[hash % prefill_candidates.size()];
 
   if (decode_index_.empty()) {
-    return can_route_prefill_without_decode_locked(routing->prefill_name);
+    auto selected_it = instances_.find(routing->prefill_name);
+    if (selected_it == instances_.end() ||
+        selected_it->second.type != InstanceType::DEFAULT) {
+      LOG(ERROR) << "No decode instance and selected prefill is not default, "
+                 << "instance: " << routing->prefill_name;
+      return false;
+    }
+    return true;
   }
 
   if (suspect_instances_.empty()) {
